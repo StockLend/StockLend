@@ -15,6 +15,7 @@ import { EndpointId } from '@layerzerolabs/lz-definitions'
 
 import './type-extensions'
 import './tasks/sendOFT'
+import './tasks/stockLend'
 
 // Set your preferred authentication method
 //
@@ -55,17 +56,37 @@ const config: HardhatUserConfig = {
         ],
     },
     networks: {
+        sepolia: {
+            eid: EndpointId.SEPOLIA_V2_TESTNET,
+            url: process.env.RPC_URL_SEPOLIA || 'https://rpc.sepolia.org',
+            accounts,
+            oftAdapter: {
+                tokenAddress: '0x2b9Ca0A8C773bb1B92A3dDAE9F882Fd14457DACc', // Mock USDC testnet address
+            },
+        },
         'optimism-testnet': {
             eid: EndpointId.OPTSEP_V2_TESTNET,
             url: process.env.RPC_URL_OP_SEPOLIA || 'https://optimism-sepolia.gateway.tenderly.co',
             accounts,
-            oftAdapter: {
-                tokenAddress: '0x0', // Set the token address for the OFT adapter
-            },
         },
         'arbitrum-testnet': {
             eid: EndpointId.ARBSEP_V2_TESTNET,
             url: process.env.RPC_URL_ARB_SEPOLIA || 'https://arbitrum-sepolia.gateway.tenderly.co',
+            accounts,
+        },
+        'base-sepolia': {
+            eid: EndpointId.BASESEP_V2_TESTNET,
+            url: process.env.RPC_URL_BASE_SEPOLIA || 'https://sepolia.base.org',
+            accounts,
+        },
+        tatara: {
+            chainId: 129399,
+            url: process.env.RPC_URL_TATARA || 'https://rpc.tatara.katanarpc.com/',
+            accounts,
+        },
+        'katana-mainnet': {
+            eid: EndpointId.KATANA_V2_MAINNET,
+            url: process.env.RPC_URL_KATANA || 'https://rpc.katana.katanarpc.com/',
             accounts,
         },
         hardhat: {
