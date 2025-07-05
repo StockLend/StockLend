@@ -11,6 +11,7 @@ import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/autom
  * @title StockLend Protocol V2
  * @dev Non-liquidatable lending protocol with automatic put option protection via Chainlink Automation
  * @dev Uses Chainlink for price feeds and automated put option triggering
+ * @dev Put options protect LENDERS by compensating them when collateral value drops below strike price
  */
 contract StockLendProtocolV2 is Ownable, ReentrancyGuard, AutomationCompatibleInterface {
     // ============================
@@ -364,9 +365,9 @@ contract StockLendProtocolV2 is Ownable, ReentrancyGuard, AutomationCompatibleIn
         // Mark as exercised
         loan.putExercised = true;
 
-        // Pay protection to borrower
+        // Pay protection to lender (treasury) to protect their capital
         protectionFund -= protectionPayout;
-        IERC20(USDC).transfer(loan.borrower, protectionPayout);
+        IERC20(USDC).transfer(treasury, protectionPayout);
 
         emit PutOptionExercised(loanId, protectionPayout, currentPrice, loan.putStrike);
     }
