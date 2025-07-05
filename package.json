@@ -1,20 +1,43 @@
 {
-  "name": "@layerzerolabs/oft-adapter-example",
-  "version": "0.4.0",
+  "name": "stocklend-protocol",
+  "version": "3.0.0",
+  "description": "Advanced DeFi lending protocol with Black-Scholes put option pricing and automated risk protection",
   "private": true,
-  "license": "MIT",
+  "license": "UNLICENSED",
+  "author": "StockLend Protocol Team",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/stocklend/protocol"
+  },
+  "keywords": [
+    "defi",
+    "lending",
+    "options",
+    "black-scholes",
+    "chainlink",
+    "layerzero",
+    "ethereum",
+    "solidity"
+  ],
   "scripts": {
     "clean": "rm -rf artifacts cache out",
     "compile": "concurrently -c auto --names forge,hardhat '$npm_execpath run compile:forge' '$npm_execpath run compile:hardhat'",
     "compile:forge": "forge build",
     "compile:hardhat": "hardhat compile",
+    "deploy": "hardhat run deploy/StockLendProtocolV3.ts",
+    "deploy:local": "hardhat run deploy/StockLendProtocolV3.ts --network localhost",
+    "demo": "hardhat run scripts/alicePutOptionDemo.ts",
+    "demo:local": "hardhat run scripts/alicePutOptionDemo.ts --network localhost",
     "lint": "$npm_execpath run lint:js && $npm_execpath run lint:sol",
     "lint:fix": "eslint --fix '**/*.{js,ts,json}' && prettier --write . && solhint 'contracts/**/*.sol' --fix --noPrompt",
     "lint:js": "eslint '**/*.{js,ts,json}' && prettier --check .",
     "lint:sol": "solhint 'contracts/**/*.sol'",
     "test": "$npm_execpath run test:forge && $npm_execpath run test:hardhat",
     "test:forge": "forge test",
-    "test:hardhat": "hardhat test"
+    "test:hardhat": "hardhat test",
+    "test:v3": "hardhat test test/hardhat/StockLendProtocolV3.test.ts",
+    "coverage": "hardhat coverage",
+    "node": "hardhat node"
   },
   "resolutions": {
     "ethers": "^5.7.2",
