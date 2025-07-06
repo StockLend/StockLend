@@ -25,7 +25,7 @@ export default function VoltaLoan() {
   const [currentPage, setCurrentPage] = useState("home")
   const [scrollY, setScrollY] = useState(0)
   const [usdcBalance, setUsdcBalance] = useState(0)
-  const [currentNetwork, setCurrentNetwork] = useState<NetworkKey>("ethereum")
+  const [currentNetwork, setCurrentNetwork] = useState<NetworkKey>("sepolia")
   const [isSwitchingNetwork, setIsSwitchingNetwork] = useState(false)
 
   useEffect(() => {

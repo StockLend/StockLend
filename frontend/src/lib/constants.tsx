@@ -18,41 +18,26 @@ export const LOAN_DURATIONS: LoanDuration[] = [
 ]
 
 export const NETWORKS: Record<NetworkKey, Network> = {
-  ethereum: {
-    chainId: "0x1",
-    name: "Ethereum",
+  sepolia: {
+    chainId: "0xaa36a7",
+    name: "Sepolia",
     symbol: "ETH",
-    rpcUrl: "https://mainnet.infura.io/v3/",
-    blockExplorer: "https://etherscan.io",
-    usdcAddress: "0xA0b86a33E6441b8435b662303c0f4c8c8e2D396e",
+    rpcUrl: "https://rpc.sepolia.org",
+    blockExplorer: "https://sepolia.etherscan.io",
+    usdcAddress: "0x6f14C02FC1F78322cFd7d707aB90f18baD3B54f5",
     icon: (
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 2L13.09 8.26L19 7L13.09 15.74L12 22L10.91 15.74L5 7L10.91 8.26L12 2Z" fill="white" />
       </svg>
     ),
   },
-  polygon: {
-    chainId: "0x89",
-    name: "Polygon",
-    symbol: "MATIC",
-    rpcUrl: "https://polygon-rpc.com/",
-    blockExplorer: "https://polygonscan.com",
-    usdcAddress: "0x3c499c542cEF5E3811e1192ce70d8cC03d5c3359",
-    icon: (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="white" />
-        <path d="M2 17L12 22L22 17" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-        <path d="M2 12L12 17L22 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-      </svg>
-    ),
-  },
-  arbitrum: {
-    chainId: "0xa4b1",
-    name: "Arbitrum",
+  arbitrumSepolia: {
+    chainId: "0x66eee",
+    name: "Arbitrum Sepolia",
     symbol: "ETH",
-    rpcUrl: "https://arb1.arbitrum.io/rpc",
-    blockExplorer: "https://arbiscan.io",
-    usdcAddress: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+    rpcUrl: "https://sepolia-rollup.arbitrum.io/rpc",
+    blockExplorer: "https://sepolia.arbiscan.io",
+    usdcAddress: "0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d",
     icon: (
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="2" fill="none" />
@@ -60,27 +45,13 @@ export const NETWORKS: Record<NetworkKey, Network> = {
       </svg>
     ),
   },
-  base: {
-    chainId: "0x2105",
-    name: "Base",
+  katana: {
+    chainId: "0x1f977", // Hexadecimal representation - you may need to adjust this
+    name: "Katana Testnet",
     symbol: "ETH",
-    rpcUrl: "https://mainnet.base.org",
-    blockExplorer: "https://basescan.org",
-    usdcAddress: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    icon: (
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="3" y="3" width="18" height="18" rx="2" stroke="white" strokeWidth="2" fill="none" />
-        <circle cx="12" cy="12" r="4" fill="white" />
-      </svg>
-    ),
-  },
-  mantle: {
-    chainId: "0x1388",
-    name: "Mantle",
-    symbol: "MNT",
-    rpcUrl: "https://rpc.mantle.xyz",
-    blockExplorer: "https://explorer.mantle.xyz",
-    usdcAddress: "0x09Bc4E0D864854c6aFB6eB9A9cdF58aC190D0dF9",
+    rpcUrl: "https://rpc.tatara.katanarpc.com/", // Please replace with actual RPC URL
+    blockExplorer: "https://explorer.tatara.katana.network/", // Please replace with actual explorer URL
+    usdcAddress: "0xe32FC2Ed67c47653f4D596C2fc7f993F49348cDB", // Please replace with actual USDC address
     icon: (
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M12 2L22 8.5V15.5L12 22L2 15.5V8.5L12 2Z" stroke="white" strokeWidth="2" fill="none" />

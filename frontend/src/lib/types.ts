@@ -21,7 +21,7 @@ export interface Network {
   icon: ReactNode
 }
 
-export type NetworkKey = "ethereum" | "polygon" | "arbitrum" | "base" | "mantle"
+export type NetworkKey = "sepolia" | "arbitrumSepolia" | "katana"
 
 export interface PageProps {
   onNavigate: (page: string) => void
