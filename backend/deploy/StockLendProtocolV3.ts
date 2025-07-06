@@ -26,7 +26,25 @@ const deployStockLendProtocol: DeployFunction = async ({ getNamedAccounts, deplo
         console.log('📄 Mock USDC deployed at:', mockUSDC.address)
     }
 
-    const usdcAddress = USDC_ADDRESS || (await deployments.get('MyERC20Mock')).address
+    // --- CONFIGURATION SPECIFIQUE TATARA ---
+    let usdcAddress = USDC_ADDRESS
+    let appleTokenAddress: string = ''
+    let applePriceFeedAddress: string = ''
+
+    if (network.name === 'tatara') {
+        usdcAddress = '0xC4AB7Ee524E99FDe68BE962d603768B60944C20d'
+        appleTokenAddress = '0x3990e910E03b8B79E9df9f4f0D5082dc5424B42A'
+        // Pour la démo, on peut déployer un MockPriceFeed pour le prix
+        const MockPriceFeed = await ethers.getContractFactory('MockPriceFeed')
+        const applePriceFeed = await MockPriceFeed.deploy(200 * 10 ** 8) // $200 AAPL
+        await applePriceFeed.deployed()
+        applePriceFeedAddress = applePriceFeed.address as string
+        console.log('🟢 Tatara: Utilisation des adresses fournies pour USDC et AAPL')
+        console.log('  - USDC:', usdcAddress)
+        console.log('  - AAPL:', appleTokenAddress)
+        console.log('  - AAPL PriceFeed:', applePriceFeedAddress)
+    }
+
     console.log('💰 USDC Address:', usdcAddress)
 
     // Deploy Main Protocol
@@ -87,15 +105,28 @@ const deployStockLendProtocol: DeployFunction = async ({ getNamedAccounts, deplo
         // Add stock assets to protocol
         try {
             console.log('\n⚙️  Configuring stock assets...')
-
-            await contract.addStockAssetV3(
-                appleToken.address,
-                applePriceFeed.address,
-                ethers.constants.AddressZero, // No volatility feed for demo
-                7500, // 75% LTV
-                false // Use default volatility (30%)
-            )
-            console.log('✅ Added AAPL with 75% LTV')
+            if (network.name === 'tatara') {
+                if (!appleTokenAddress || !applePriceFeedAddress) {
+                    throw new Error('appleTokenAddress ou applePriceFeedAddress non défini pour tatara')
+                }
+                await contract.addStockAssetV3(
+                    appleTokenAddress,
+                    applePriceFeedAddress,
+                    ethers.constants.AddressZero, // No volatility feed for demo
+                    7500, // 75% LTV
+                    false // Use default volatility (30%)
+                )
+                console.log('✅ [Tatara] Added AAPL with 75% LTV')
+            } else {
+                await contract.addStockAssetV3(
+                    appleToken.address,
+                    applePriceFeed.address,
+                    ethers.constants.AddressZero, // No volatility feed for demo
+                    7500, // 75% LTV
+                    false // Use default volatility (30%)
+                )
+                console.log('✅ Added AAPL with 75% LTV')
+            }
 
             await contract.addStockAssetV3(
                 teslaToken.address,

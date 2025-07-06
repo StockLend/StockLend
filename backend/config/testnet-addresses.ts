@@ -101,13 +101,21 @@ export const TESTNET_ADDRESSES: Record<string, NetworkConfig> = {
     },
     tatara: {
         usdc: {
-            address: '0x102E14ffF48170F2e5b6d0e30259fCD4eE5E28aE', // Using vbUSDC Custom Token as primary
-            name: 'vbUSDC Custom Token',
-            symbol: 'vbUSDC',
+            address: '0xC4AB7Ee524E99FDe68BE962d603768B60944C20d',
+            name: 'Mock USDC',
+            symbol: 'USDC',
             decimals: 6,
             isActive: true,
         },
         tokens: {
+            AAPL: {
+                address: '0x3990e910E03b8B79E9df9f4f0D5082dc5424B42A',
+                name: 'Apple Inc Stock',
+                symbol: 'AAPL',
+                decimals: 18,
+                isActive: true,
+                ltv: 7500, // 75% LTV
+            },
             WETH: {
                 address: '0x17B8Ee96E3bcB3b04b3e8334de4524520C51caB4',
                 name: 'WETH Custom Token',
