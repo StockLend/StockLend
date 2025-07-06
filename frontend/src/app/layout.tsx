@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Web3Provider from "@/components/Web3Provider";
 
 export const metadata: Metadata = {
   title: "Volta Loan - Institutional Grade Stock Lending",
@@ -14,7 +15,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        {children}
+        <Web3Provider>
+          {children}
+        </Web3Provider>
       </body>
     </html>
   );

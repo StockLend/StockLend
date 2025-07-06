@@ -2,47 +2,104 @@
 
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Wallet, Zap, TrendingUp, ChevronDown } from "lucide-react"
-import { STOCKS, LOAN_DURATIONS, NETWORKS } from "@/lib/constants"
+import { Wallet, Zap, ChevronDown } from "lucide-react"
+import { NETWORKS } from "@/lib/constants"
+import { useAccount, useConnect, useDisconnect, useChainId } from 'wagmi'
+import { injected } from 'wagmi/connectors'
 import type { AppPageProps } from "@/lib/types"
+import LendComponent from "./LendComponent"
+import BorrowComponent from "./BorrowComponent"
+import PutOptionComponent from "./PutOptionComponent"
+import MyPositionsComponent from "./MyPositionsComponent"
+import { Toaster } from 'react-hot-toast'
+import { useTokenApproval, useTokenBalance } from '@/lib/hooks/useContract'
+import { getStockLendProtocolAddress } from '@/lib/contracts'
+import { toast } from 'react-hot-toast'
 
 export default function AppPage({
   onNavigate,
-  isConnected,
-  account,
-  onDisconnect,
-  onConnect,
-  isConnecting,
-  usdcBalance,
   currentNetwork,
   onSwitchNetwork,
   isSwitchingNetwork,
 }: AppPageProps) {
-  const [supplyAmount, setSupplyAmount] = useState("")
-  const [borrowAmount, setBorrowAmount] = useState("")
-  const [selectedStock, setSelectedStock] = useState("AAPL")
-  const [loanDuration, setLoanDuration] = useState("90")
-  const [customDuration, setCustomDuration] = useState("")
+  const { address, isConnected } = useAccount()
+  const { connect, isPending: isConnecting } = useConnect()
+  const { disconnect } = useDisconnect()
+  const chainId = useChainId()
 
-  const currentNetworkData = NETWORKS[currentNetwork]
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
+  const [showApprovalTools, setShowApprovalTools] = useState(false)
 
-  const handleMaxSupply = () => {
-    setSupplyAmount(usdcBalance.toString())
-  }
+  // Hooks pour les approbations de tokens
+  const { 
+    approve: approveUSDC, 
+    isApproving: isApprovingUSDC,
+    refetchAllowance: refetchUSDCAllowance
+  } = useTokenApproval('USDC')
+  
+  const { 
+    approve: approveAAPL, 
+    isApproving: isApprovingAAPL,
+    refetchAllowance: refetchAAPLAllowance
+  } = useTokenApproval('AAPL')
 
-  const handleMaxBorrow = () => {
-    const selectedStockData = STOCKS.find((s) => s.symbol === selectedStock)
-    if (selectedStockData) {
-      const maxBorrow = (selectedStockData.price * 0.75).toFixed(2) // 75% LTV
-      setBorrowAmount(maxBorrow)
+  // Hooks pour les balances de tokens
+  const { formattedBalance: usdcBalance, refetch: refetchUSDCBalance } = useTokenBalance('USDC')
+  const { formattedBalance: aaplBalance, refetch: refetchAAPLBalance } = useTokenBalance('AAPL')
+
+  // Fonctions pour approuver les tokens
+  const handleApproveUSDC = async () => {
+    try {
+      console.log('Approving USDC...')
+      console.log('Chain ID:', chainId)
+      console.log('Protocol address:', getStockLendProtocolAddress(chainId))
+      
+      await approveUSDC('1000000', 6) // 1,000,000 USDC (6 decimals)
+      
+      toast.success('USDC approval transaction sent!')
+      setTimeout(() => refetchUSDCAllowance(), 2000)
+    } catch (error) {
+      console.error('Failed to approve USDC:', error)
+      toast.error(`Failed to approve USDC: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
+
+  const handleApproveAAPL = async () => {
+    try {
+      console.log('Approving AAPL...')
+      console.log('Chain ID:', chainId)
+      console.log('Protocol address:', getStockLendProtocolAddress(chainId))
+      
+      await approveAAPL('1000', 18) // 1,000 AAPL (18 decimals)
+      
+      toast.success('AAPL approval transaction sent!')
+      setTimeout(() => refetchAAPLAllowance(), 2000)
+    } catch (error) {
+      console.error('Failed to approve AAPL:', error)
+      toast.error(`Failed to approve AAPL: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  const handleSuccess = () => {
+    // Trigger a refresh of all components
+    setRefreshTrigger(prev => prev + 1)
+  }
+
+  const connectWallet = async () => {
+    try {
+      connect({ connector: injected() })
+    } catch (error) {
+      console.error('Failed to connect wallet:', error)
+    }
+  }
+
+  const disconnectWallet = () => {
+    disconnect()
+  }
+
+  const currentNetworkData = NETWORKS[currentNetwork]
 
   return (
     <div
@@ -52,6 +109,8 @@ export default function AppPage({
         color: "#2D3748",
       }}
     >
+      <Toaster position="top-right" />
+      
       <header className="flex justify-between items-center p-8">
         <button onClick={() => onNavigate("home")} className="flex items-center space-x-3">
           <div
@@ -136,7 +195,7 @@ export default function AppPage({
 
             {/* Wallet Address */}
             <Button
-              onClick={onDisconnect}
+              onClick={disconnectWallet}
               variant="outline"
               className="font-semibold px-6 py-3 bg-transparent"
               style={{
@@ -146,12 +205,12 @@ export default function AppPage({
                 fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
               }}
             >
-              {account.slice(0, 6)}...{account.slice(-4)}
+              {address?.slice(0, 6)}...{address?.slice(-4)}
             </Button>
           </div>
         ) : (
           <Button
-            onClick={onConnect}
+            onClick={connectWallet}
             disabled={isConnecting}
             className="text-white font-semibold px-6 py-3"
             style={{
@@ -190,613 +249,153 @@ export default function AppPage({
             />
           </div>
 
-          <Tabs defaultValue="trading" className="w-full">
+          {/* Approval Tools Button */}
+          {isConnected && (
+            <div className="flex justify-center mb-4">
+              <Button
+                onClick={() => setShowApprovalTools(!showApprovalTools)}
+                className="text-white font-semibold px-6 py-2 text-sm"
+                style={{
+                  fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
+                  background: "linear-gradient(135deg, #9F7AEA 0%, #805AD5 100%)",
+                }}
+              >
+                {showApprovalTools ? "HIDE_TOKEN_APPROVALS" : "SHOW_TOKEN_APPROVALS"}
+              </Button>
+            </div>
+          )}
+
+          {/* Token Approval Tools */}
+          {isConnected && showApprovalTools && (
+            <div className="mb-8 p-4 rounded-lg" style={{
+              backgroundColor: "rgba(255, 255, 255, 0.5)",
+              borderColor: "rgba(99, 179, 237, 0.08)",
+              backdropFilter: "blur(20px)",
+              border: "1px solid rgba(99, 179, 237, 0.2)",
+            }}>
+              <h3 className="text-lg font-bold mb-4 text-center" style={{
+                fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
+              }}>TOKEN_APPROVAL_TOOLS</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg" style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.7)",
+                  border: "1px solid rgba(99, 179, 237, 0.2)",
+                }}>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-semibold">USDC Balance:</span>
+                    <span>{usdcBalance} USDC</span>
+                  </div>
+                  <Button
+                    onClick={handleApproveUSDC}
+                    disabled={isApprovingUSDC}
+                    className="w-full"
+                    style={{
+                      background: "linear-gradient(135deg, #63B3ED 0%, #4299E1 100%)",
+                      color: "white",
+                    }}
+                  >
+                    {isApprovingUSDC ? "APPROVING..." : "APPROVE_USDC"}
+                  </Button>
+                </div>
+                
+                <div className="p-4 rounded-lg" style={{
+                  backgroundColor: "rgba(255, 255, 255, 0.7)",
+                  border: "1px solid rgba(99, 179, 237, 0.2)",
+                }}>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-semibold">AAPL Balance:</span>
+                    <span>{aaplBalance} AAPL</span>
+                  </div>
+                  <Button
+                    onClick={handleApproveAAPL}
+                    disabled={isApprovingAAPL}
+                    className="w-full"
+                    style={{
+                      background: "linear-gradient(135deg, #68D391 0%, #48BB78 100%)",
+                      color: "white",
+                    }}
+                  >
+                    {isApprovingAAPL ? "APPROVING..." : "APPROVE_AAPL"}
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Test Connection Button */}
+              <div className="mt-4 p-4 rounded-lg" style={{
+                backgroundColor: "rgba(255, 255, 255, 0.7)",
+                border: "1px solid rgba(99, 179, 237, 0.2)",
+              }}>
+                <Button
+                  onClick={() => {
+                    try {
+                      const protocolAddress = getStockLendProtocolAddress(chainId)
+                      console.log('Protocol address:', protocolAddress)
+                      toast.success(`Successfully connected to protocol at ${protocolAddress}`)
+                      
+                      // Refresh balances
+                      refetchUSDCBalance()
+                      refetchAAPLBalance()
+                      refetchUSDCAllowance()
+                      refetchAAPLAllowance()
+                    } catch (error) {
+                      console.error('Connection test failed:', error)
+                      toast.error(`Connection test failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
+                    }
+                  }}
+                  className="w-full"
+                  style={{
+                    background: "linear-gradient(135deg, #F6AD55 0%, #ED8936 100%)",
+                    color: "white",
+                  }}
+                >
+                  TEST_CONNECTION
+                </Button>
+              </div>
+              
+              <div className="mt-2 text-xs text-gray-500 text-center">
+                <p>Protocol Address: {chainId ? getStockLendProtocolAddress(chainId) : "Not connected"}</p>
+                <p className="mt-1">Network: {chainId || "Unknown"}</p>
+              </div>
+            </div>
+          )}
+
+          <Tabs defaultValue="lend" className="w-full">
             <TabsList
-              className="grid w-full grid-cols-2 mb-8"
+              className="grid w-full grid-cols-4 mb-8"
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.6)",
                 fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
               }}
             >
-              <TabsTrigger value="trading" style={{ color: "#4A5568", letterSpacing: "0.05em" }}>
-                TRADING
+              <TabsTrigger value="lend" style={{ color: "#4A5568", letterSpacing: "0.05em" }}>
+                LEND_USDC
+              </TabsTrigger>
+              <TabsTrigger value="borrow" style={{ color: "#4A5568", letterSpacing: "0.05em" }}>
+                BORROW_USDC
+              </TabsTrigger>
+              <TabsTrigger value="hedge" style={{ color: "#4A5568", letterSpacing: "0.05em" }}>
+                PUT_OPTIONS
               </TabsTrigger>
               <TabsTrigger value="positions" style={{ color: "#4A5568", letterSpacing: "0.05em" }}>
                 MY_POSITIONS
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="trading">
-              <div className="grid md:grid-cols-2 gap-12">
-                {/* USDC Lending Pool */}
-                <Card
-                  className="p-8 transition-all duration-500 border hover:scale-105 hover:shadow-2xl"
-                  style={{
-                    backgroundColor: "rgba(255, 255, 255, 0.25)",
-                    borderColor: "rgba(99, 179, 237, 0.08)",
-                    backdropFilter: "blur(20px)",
-                    boxShadow: "0 8px 32px rgba(99, 179, 237, 0.1)",
-                  }}
-                >
-                  <div className="flex items-center space-x-4 mb-8">
-                    <div className="w-16 h-16 bg-blue-500 rounded-full flex items-center justify-center">
-                      <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                        <g fill="none" fillRule="evenodd">
-                          <circle cx="16" cy="16" r="16" fill="#2775CA" />
-                          <path
-                            d="M15.75 27.5c-6.904 0-12.5-5.596-12.5-12.5S8.846 2.5 15.75 2.5 28.25 8.096 28.25 15s-5.596 12.5-12.5 12.5zm5.5-16.5c0-1.381-1.119-2.5-2.5-2.5h-6c-1.381 0-2.5 1.119-2.5 2.5s1.119 2.5 2.5 2.5h1v2h-1c-1.381 0-2.5 1.119-2.5 2.5s1.119 2.5 2.5 2.5h6c1.381 0 2.5-1.119 2.5-2.5s-1.119-2.5-2.5-2.5h-1v-2h1c1.381 0 2.5-1.119 2.5-2.5z"
-                            fill="#FFF"
-                          />
-                        </g>
-                      </svg>
-                    </div>
-                    <h2
-                      className="text-4xl font-bold"
-                      style={{
-                        fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                        fontWeight: "700",
-                        fontSize: "32px",
-                        letterSpacing: "0.05em",
-                        color: "#2D3748",
-                      }}
-                    >
-                      SUPPLY_USDC
-                    </h2>
-                  </div>
+            <TabsContent value="lend">
+              <LendComponent onSuccess={handleSuccess} />
+            </TabsContent>
 
-                  <div className="grid grid-cols-2 gap-6 mb-8">
-                    <div
-                      className="rounded-lg p-4"
-                      style={{
-                        backgroundColor: "rgba(99, 179, 237, 0.04)",
-                        border: "1px solid rgba(99, 179, 237, 0.08)",
-                      }}
-                    >
-                      <h3
-                        className="text-sm mb-1 font-semibold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "500",
-                          fontSize: "12px",
-                          color: "#4299E1",
-                          letterSpacing: "0.1em",
-                        }}
-                      >
-                        TOTAL_SUPPLIED
-                      </h3>
-                      <p
-                        className="text-2xl font-bold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "700",
-                          fontSize: "24px",
-                          letterSpacing: "0.02em",
-                          color: "#4299E1",
-                        }}
-                      >
-                        $2.4M
-                      </p>
-                    </div>
-                    <div
-                      className="rounded-lg p-4"
-                      style={{
-                        backgroundColor: "rgba(99, 179, 237, 0.04)",
-                        border: "1px solid rgba(99, 179, 237, 0.08)",
-                      }}
-                    >
-                      <h3
-                        className="text-sm mb-1 font-semibold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "500",
-                          fontSize: "12px",
-                          color: "#4299E1",
-                          letterSpacing: "0.1em",
-                        }}
-                      >
-                        SUPPLY_APY
-                      </h3>
-                      <p
-                        className="text-2xl font-bold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "700",
-                          fontSize: "24px",
-                          letterSpacing: "0.02em",
-                          color: "#4299E1",
-                        }}
-                      >
-                        12.5%
-                      </p>
-                    </div>
-                    <div
-                      className="rounded-lg p-4"
-                      style={{
-                        backgroundColor: "rgba(99, 179, 237, 0.04)",
-                        border: "1px solid rgba(99, 179, 237, 0.08)",
-                      }}
-                    >
-                      <h3
-                        className="text-sm mb-1 font-semibold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "500",
-                          fontSize: "12px",
-                          color: "#4299E1",
-                          letterSpacing: "0.1em",
-                        }}
-                      >
-                        AVAILABLE
-                      </h3>
-                      <p
-                        className="text-2xl font-bold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "700",
-                          fontSize: "24px",
-                          letterSpacing: "0.02em",
-                          color: "#4299E1",
-                        }}
-                      >
-                        $890K
-                      </p>
-                    </div>
-                    <div
-                      className="rounded-lg p-4"
-                      style={{
-                        backgroundColor: "rgba(99, 179, 237, 0.04)",
-                        border: "1px solid rgba(99, 179, 237, 0.08)",
-                      }}
-                    >
-                      <h3
-                        className="text-sm mb-1 font-semibold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "500",
-                          fontSize: "12px",
-                          color: "#4299E1",
-                          letterSpacing: "0.1em",
-                        }}
-                      >
-                        YOUR_BALANCE
-                      </h3>
-                      <p
-                        className="text-2xl font-bold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "700",
-                          fontSize: "24px",
-                          letterSpacing: "0.02em",
-                          color: "#4299E1",
-                        }}
-                      >
-                        ${usdcBalance.toLocaleString()}
-                      </p>
-                    </div>
-                  </div>
+            <TabsContent value="borrow">
+              <BorrowComponent onSuccess={handleSuccess} />
+            </TabsContent>
 
-                  <div className="space-y-6">
-                    <div>
-                      <Label
-                        className="font-semibold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "500",
-                          fontSize: "14px",
-                          color: "#4A5568",
-                          letterSpacing: "0.05em",
-                        }}
-                      >
-                        SUPPLY_AMOUNT
-                      </Label>
-                      <div className="flex mt-2">
-                        <Input
-                          type="number"
-                          placeholder="0.0"
-                          value={supplyAmount}
-                          onChange={(e) => setSupplyAmount(e.target.value)}
-                          className="flex-1 text-lg p-4"
-                          style={{
-                            backgroundColor: "rgba(255, 255, 255, 0.9)",
-                            borderColor: "rgba(99, 179, 237, 0.3)",
-                            color: "#2D3748",
-                            fontFamily:
-                              "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          }}
-                        />
-                        <Button
-                          onClick={handleMaxSupply}
-                          className="ml-3 px-6 text-white"
-                          style={{
-                            background: "linear-gradient(135deg, #63B3ED 0%, #4299E1 100%)",
-                            fontFamily:
-                              "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                            letterSpacing: "0.1em",
-                          }}
-                        >
-                          MAX
-                        </Button>
-                      </div>
-                    </div>
-
-                    <Button
-                      className="w-full py-4 text-lg font-bold text-white"
-                      disabled={!isConnected}
-                      style={{
-                        fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                        fontWeight: "600",
-                        letterSpacing: "0.05em",
-                        background: "linear-gradient(135deg, #63B3ED 0%, #4299E1 100%)",
-                      }}
-                    >
-                      {isConnected ? "SUPPLY_USDC" : "CONNECT_WALLET_TO_SUPPLY"}
-                    </Button>
-                  </div>
-                </Card>
-
-                {/* Stock Collateral Borrowing */}
-                <Card
-                  className="p-8 transition-all duration-500 border hover:scale-105 hover:shadow-2xl"
-                  style={{
-                    backgroundColor: "rgba(255, 255, 255, 0.25)",
-                    borderColor: "rgba(99, 179, 237, 0.08)",
-                    backdropFilter: "blur(20px)",
-                    boxShadow: "0 8px 32px rgba(72, 187, 120, 0.1)",
-                  }}
-                >
-                  <div className="flex items-center space-x-4 mb-8">
-                    <div
-                      className="w-16 h-16 rounded-full flex items-center justify-center"
-                      style={{ background: "linear-gradient(135deg, #63B3ED 0%, #4299E1 100%)" }}
-                    >
-                      <TrendingUp className="w-8 h-8 text-white" />
-                    </div>
-                    <h2
-                      className="text-4xl font-bold"
-                      style={{
-                        fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                        fontWeight: "700",
-                        fontSize: "32px",
-                        letterSpacing: "0.05em",
-                        color: "#2D3748",
-                      }}
-                    >
-                      BORROW_USDC
-                    </h2>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-6 mb-8">
-                    <div
-                      className="rounded-lg p-4"
-                      style={{
-                        backgroundColor: "rgba(99, 179, 237, 0.04)",
-                        border: "1px solid rgba(99, 179, 237, 0.08)",
-                      }}
-                    >
-                      <h3
-                        className="text-sm mb-1 font-semibold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "500",
-                          fontSize: "12px",
-                          color: "#4299E1",
-                          letterSpacing: "0.1em",
-                        }}
-                      >
-                        TOTAL_BORROWED
-                      </h3>
-                      <p
-                        className="text-2xl font-bold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "700",
-                          fontSize: "24px",
-                          letterSpacing: "0.02em",
-                          color: "#4299E1",
-                        }}
-                      >
-                        $1.6M
-                      </p>
-                    </div>
-                    <div
-                      className="rounded-lg p-4"
-                      style={{
-                        backgroundColor: "rgba(99, 179, 237, 0.04)",
-                        border: "1px solid rgba(99, 179, 237, 0.08)",
-                      }}
-                    >
-                      <h3
-                        className="text-sm mb-1 font-semibold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "500",
-                          fontSize: "12px",
-                          color: "#4299E1",
-                          letterSpacing: "0.1em",
-                        }}
-                      >
-                        BORROW_APR
-                      </h3>
-                      <p
-                        className="text-2xl font-bold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "700",
-                          fontSize: "24px",
-                          letterSpacing: "0.02em",
-                          color: "#4299E1",
-                        }}
-                      >
-                        8.2%
-                      </p>
-                    </div>
-                    <div
-                      className="rounded-lg p-4"
-                      style={{
-                        backgroundColor: "rgba(99, 179, 237, 0.04)",
-                        border: "1px solid rgba(99, 179, 237, 0.08)",
-                      }}
-                    >
-                      <h3
-                        className="text-sm mb-1 font-semibold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "500",
-                          fontSize: "12px",
-                          color: "#4299E1",
-                          letterSpacing: "0.1em",
-                        }}
-                      >
-                        MAX_LTV
-                      </h3>
-                      <p
-                        className="text-2xl font-bold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "700",
-                          fontSize: "24px",
-                          letterSpacing: "0.02em",
-                          color: "#4299E1",
-                        }}
-                      >
-                        75%
-                      </p>
-                    </div>
-                    <div
-                      className="rounded-lg p-4"
-                      style={{
-                        backgroundColor: "rgba(99, 179, 237, 0.04)",
-                        border: "1px solid rgba(99, 179, 237, 0.08)",
-                      }}
-                    >
-                      <h3
-                        className="text-sm mb-1 font-semibold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "500",
-                          fontSize: "12px",
-                          color: "#4299E1",
-                          letterSpacing: "0.1em",
-                        }}
-                      >
-                        YOUR_DEBT
-                      </h3>
-                      <p
-                        className="text-2xl font-bold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "700",
-                          fontSize: "24px",
-                          letterSpacing: "0.02em",
-                          color: "#4299E1",
-                        }}
-                      >
-                        $0
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div>
-                      <Label
-                        className="font-semibold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "500",
-                          fontSize: "14px",
-                          color: "#4A5568",
-                          letterSpacing: "0.05em",
-                        }}
-                      >
-                        STOCK_COLLATERAL
-                      </Label>
-                      <Select value={selectedStock} onValueChange={setSelectedStock}>
-                        <SelectTrigger
-                          className="w-full mt-2 text-lg p-4"
-                          style={{
-                            backgroundColor: "rgba(255, 255, 255, 0.9)",
-                            borderColor: "rgba(99, 179, 237, 0.3)",
-                            color: "#2D3748",
-                            fontFamily:
-                              "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          }}
-                        >
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {STOCKS.map((stock) => (
-                            <SelectItem key={stock.symbol} value={stock.symbol}>
-                              {stock.symbol} - {stock.name} (${stock.price})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    <div>
-                      <Label
-                        className="font-semibold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "500",
-                          fontSize: "14px",
-                          color: "#4A5568",
-                          letterSpacing: "0.05em",
-                        }}
-                      >
-                        BORROW_AMOUNT_(USDC)
-                      </Label>
-                      <div className="flex mt-2">
-                        <Input
-                          type="number"
-                          placeholder="0.0"
-                          value={borrowAmount}
-                          onChange={(e) => setBorrowAmount(e.target.value)}
-                          className="flex-1 text-lg p-4"
-                          style={{
-                            backgroundColor: "rgba(255, 255, 255, 0.9)",
-                            borderColor: "rgba(99, 179, 237, 0.3)",
-                            color: "#2D3748",
-                            fontFamily:
-                              "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          }}
-                        />
-                        <Button
-                          onClick={handleMaxBorrow}
-                          className="ml-3 px-6 text-white"
-                          style={{
-                            background: "linear-gradient(135deg, #63B3ED 0%, #4299E1 100%)",
-                            fontFamily:
-                              "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                            letterSpacing: "0.1em",
-                          }}
-                        >
-                          MAX
-                        </Button>
-                      </div>
-                    </div>
-
-                    <div>
-                      <Label
-                        className="font-semibold"
-                        style={{
-                          fontFamily:
-                            "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                          fontWeight: "500",
-                          fontSize: "14px",
-                          color: "#4A5568",
-                          letterSpacing: "0.05em",
-                        }}
-                      >
-                        LOAN_DURATION
-                      </Label>
-                      <div className="space-y-3 mt-2">
-                        <Select value={loanDuration} onValueChange={setLoanDuration}>
-                          <SelectTrigger
-                            className="w-full text-lg p-4"
-                            style={{
-                              backgroundColor: "rgba(255, 255, 255, 0.9)",
-                              borderColor: "rgba(99, 179, 237, 0.3)",
-                              color: "#2D3748",
-                              fontFamily:
-                                "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                            }}
-                          >
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {LOAN_DURATIONS.map((duration) => (
-                              <SelectItem key={duration.value} value={duration.value}>
-                                {duration.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-
-                        {loanDuration === "custom" && (
-                          <Input
-                            type="number"
-                            placeholder="Enter custom days (1-365)"
-                            value={customDuration}
-                            onChange={(e) => setCustomDuration(e.target.value)}
-                            min="1"
-                            max="365"
-                            className="text-lg p-4"
-                            style={{
-                              backgroundColor: "rgba(255, 255, 255, 0.9)",
-                              borderColor: "rgba(99, 179, 237, 0.3)",
-                              color: "#2D3748",
-                              fontFamily:
-                                "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                            }}
-                          />
-                        )}
-                      </div>
-                    </div>
-
-                    <Button
-                      className="w-full py-4 text-lg font-bold text-white"
-                      disabled={!isConnected}
-                      style={{
-                        fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                        fontWeight: "600",
-                        letterSpacing: "0.05em",
-                        background: "linear-gradient(135deg, #63B3ED 0%, #4299E1 100%)",
-                      }}
-                    >
-                      {isConnected ? "BORROW_USDC" : "CONNECT_WALLET_TO_BORROW"}
-                    </Button>
-                  </div>
-                </Card>
-              </div>
+            <TabsContent value="hedge">
+              <PutOptionComponent onSuccess={handleSuccess} />
             </TabsContent>
 
             <TabsContent value="positions">
-              <div className="text-center py-20">
-                <h2
-                  className="text-3xl font-bold mb-4"
-                  style={{
-                    fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                    fontWeight: "700",
-                    fontSize: "32px",
-                    letterSpacing: "0.05em",
-                    color: "#2D3748",
-                  }}
-                >
-                  MY_POSITIONS
-                </h2>
-                <p
-                  style={{
-                    fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
-                    fontWeight: "400",
-                    fontSize: "16px",
-                    color: "#4A5568",
-                    lineHeight: "1.6",
-                    letterSpacing: "0.02em",
-                  }}
-                >
-                  NO_ACTIVE_POSITIONS_YET._START_BY_SUPPLYING_OR_BORROWING_ASSETS.
-                </p>
-              </div>
+              <MyPositionsComponent onSuccess={handleSuccess} />
             </TabsContent>
           </Tabs>
         </div>
