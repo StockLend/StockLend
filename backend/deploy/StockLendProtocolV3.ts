@@ -1,5 +1,5 @@
 import { type DeployFunction } from 'hardhat-deploy/types'
-import { getNetworkConfig, getUSDCAddress } from './config/testnet-addresses'
+import { getNetworkConfig, getUSDCAddress } from '../config/testnet-addresses'
 import { ethers } from 'hardhat'
 
 const deployStockLendProtocol: DeployFunction = async ({ getNamedAccounts, deployments, network }) => {

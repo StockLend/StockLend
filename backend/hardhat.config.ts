@@ -57,6 +57,28 @@ const config: HardhatUserConfig = {
         ],
     },
     networks: {
+
+        // Arbitrum - Pour les vaults de yield
+        arbitrum: {
+            eid: EndpointId.ARBITRUM_V2_TESTNET,
+            url: process.env.RPC_URL_ARBITRUM || 'https://arbitrum-sepolia.gateway.tenderly.co',
+            accounts,
+        },
+
+        // Base - Pour les vaults de yield alternatifs
+        base: {
+            eid: EndpointId.BASE_V2_TESTNET,
+            url: process.env.RPC_URL_BASE || 'https://sepolia.base.org',
+            accounts,
+        },
+
+        // Katana testnet
+        'katana-testnet': {
+            eid: EndpointId.KATANA_V2_TESTNET,
+            url: process.env.RPC_URL_KATANA || 'https://rpc.tatara.katanarpc.com/',
+            accounts,
+        },
+
         sepolia: {
             eid: EndpointId.SEPOLIA_V2_TESTNET,
             url: process.env.RPC_URL_SEPOLIA || 'https://rpc.sepolia.org',
@@ -83,11 +105,6 @@ const config: HardhatUserConfig = {
         tatara: {
             chainId: 129399,
             url: process.env.RPC_URL_TATARA || 'https://rpc.tatara.katanarpc.com/',
-            accounts,
-        },
-        'katana-mainnet': {
-            eid: EndpointId.KATANA_V2_MAINNET,
-            url: process.env.RPC_URL_KATANA || 'https://rpc.katana.katanarpc.com/',
             accounts,
         },
         hardhat: {
