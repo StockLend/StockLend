@@ -280,7 +280,9 @@ library BlackScholesLib {
         if (stepSize == 0) stepSize = 1; // Minimum step
 
         // Start from highest strike and work down to find best affordable protection
-        for (uint256 k = maxStrike; k >= minStrike; k -= stepSize) {
+        // Safe loop to prevent underflow
+        uint256 k = maxStrike;
+        while (k >= minStrike && k >= stepSize) {
             params.strike = k;
             BSResult memory result = calculatePutPremiumHybrid(params);
 
@@ -288,8 +290,7 @@ library BlackScholesLib {
                 return k; // Return highest affordable strike (best protection)
             }
 
-            // Prevent underflow
-            if (k <= stepSize) break;
+            k = k - stepSize;
         }
 
         return minStrike; // Fallback to minimum strike
@@ -325,13 +326,19 @@ library BlackScholesLib {
         // Iterate by 0.1$ increments as specified
         uint256 stepSize = 10000000; // 0.1$ in 8 decimals
 
-        for (uint256 k = minStrike; k <= maxStrike; k += stepSize) {
+        // Safe loop to prevent overflow
+        uint256 k = minStrike;
+        while (k <= maxStrike && k + stepSize > k) {
+            // Prevent overflow
             params.strike = k;
             BSResult memory result = calculatePutPremium(params);
 
             if (result.putPremium <= availablePremium) {
                 return k; // Return first K where premium ≤ budget
             }
+
+            if (k + stepSize > maxStrike) break; // Prevent going beyond maxStrike
+            k += stepSize;
         }
 
         return minStrike; // Fallback to minimum strike

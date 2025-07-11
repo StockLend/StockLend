@@ -13,6 +13,7 @@ import LendComponent from "./LendComponent"
 import BorrowComponent from "./BorrowComponent"
 import PutOptionComponent from "./PutOptionComponent"
 import MyPositionsComponent from "./MyPositionsComponent"
+import DemoComponent from "./DemoComponent"
 import { Toaster } from 'react-hot-toast'
 import { useTokenApproval, useTokenBalance } from '@/lib/hooks/useContract'
 import { getStockLendProtocolAddress } from '@/lib/contracts'
@@ -33,14 +34,14 @@ export default function AppPage({
   const [showApprovalTools, setShowApprovalTools] = useState(false)
 
   // Hooks pour les approbations de tokens
-  const { 
-    approve: approveUSDC, 
+  const {
+    approve: approveUSDC,
     isApproving: isApprovingUSDC,
     refetchAllowance: refetchUSDCAllowance
   } = useTokenApproval('USDC')
-  
-  const { 
-    approve: approveAAPL, 
+
+  const {
+    approve: approveAAPL,
     isApproving: isApprovingAAPL,
     refetchAllowance: refetchAAPLAllowance
   } = useTokenApproval('AAPL')
@@ -55,9 +56,9 @@ export default function AppPage({
       console.log('Approving USDC...')
       console.log('Chain ID:', chainId)
       console.log('Protocol address:', getStockLendProtocolAddress(chainId))
-      
+
       await approveUSDC('1000000', 6) // 1,000,000 USDC (6 decimals)
-      
+
       toast.success('USDC approval transaction sent!')
       setTimeout(() => refetchUSDCAllowance(), 2000)
     } catch (error) {
@@ -71,9 +72,9 @@ export default function AppPage({
       console.log('Approving AAPL...')
       console.log('Chain ID:', chainId)
       console.log('Protocol address:', getStockLendProtocolAddress(chainId))
-      
+
       await approveAAPL('1000', 18) // 1,000 AAPL (18 decimals)
-      
+
       toast.success('AAPL approval transaction sent!')
       setTimeout(() => refetchAAPLAllowance(), 2000)
     } catch (error) {
@@ -110,21 +111,21 @@ export default function AppPage({
       }}
     >
       <Toaster position="top-right" />
-      
-      <header className="flex justify-between items-center p-8">
-        <button onClick={() => onNavigate("home")} className="flex items-center space-x-3">
+
+      <header className="flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 sm:p-8 space-y-4 sm:space-y-0">
+        <button onClick={() => onNavigate("home")} className="flex items-center space-x-3 mx-auto sm:mx-0">
           <div
-            className="w-12 h-12 rounded-lg flex items-center justify-center"
+            className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center"
             style={{ background: "linear-gradient(135deg, #63B3ED 0%, #4299E1 100%)" }}
           >
-            <Zap className="w-7 h-7 text-white" />
+            <Zap className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
           </div>
           <div
-            className="text-3xl font-bold"
+            className="text-2xl sm:text-3xl font-bold"
             style={{
               fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
               fontWeight: "700",
-              fontSize: "26px",
+              fontSize: "clamp(20px, 5vw, 26px)",
               letterSpacing: "0.02em",
               background: "linear-gradient(135deg, #4299E1 0%, #63B3ED 100%)",
               WebkitBackgroundClip: "text",
@@ -137,7 +138,7 @@ export default function AppPage({
         </button>
 
         {isConnected ? (
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3 justify-center sm:justify-end">
             {/* Network Selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -152,12 +153,12 @@ export default function AppPage({
                   disabled={isSwitchingNetwork}
                 >
                   <div
-                    className="w-6 h-6 rounded-full flex items-center justify-center"
+                    className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center"
                     style={{ background: "linear-gradient(135deg, #63B3ED 0%, #4299E1 100%)" }}
                   >
                     {currentNetworkData.icon}
                   </div>
-                  <span className="text-xs font-medium" style={{ color: "#4A5568" }}>
+                  <span className="text-xs font-medium hidden sm:block" style={{ color: "#4A5568" }}>
                     {isSwitchingNetwork ? "..." : currentNetworkData.symbol}
                   </span>
                   <ChevronDown className="w-3 h-3" style={{ color: "#63B3ED" }} />
@@ -197,7 +198,7 @@ export default function AppPage({
             <Button
               onClick={disconnectWallet}
               variant="outline"
-              className="font-semibold px-6 py-3 bg-transparent"
+              className="font-semibold px-4 sm:px-6 py-2 sm:py-3 bg-transparent text-sm sm:text-base"
               style={{
                 borderColor: "#63B3ED",
                 color: "#4299E1",
@@ -212,7 +213,7 @@ export default function AppPage({
           <Button
             onClick={connectWallet}
             disabled={isConnecting}
-            className="text-white font-semibold px-6 py-3"
+            className="text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base mx-auto sm:mx-0"
             style={{
               fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
               background: "linear-gradient(135deg, #63B3ED 0%, #4299E1 100%)",
@@ -224,14 +225,14 @@ export default function AppPage({
         )}
       </header>
 
-      <div className="p-8">
+      <div className="p-4 sm:p-8">
         <div className="max-w-7xl mx-auto">
           <h1
-            className="text-5xl font-bold mb-4 text-center"
+            className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-center"
             style={{
               fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
               fontWeight: "800",
-              fontSize: "48px",
+              fontSize: "clamp(24px, 8vw, 48px)",
               letterSpacing: "0.02em",
               color: "#2D3748",
             }}
@@ -240,9 +241,9 @@ export default function AppPage({
           </h1>
 
           {/* Decorative Line */}
-          <div className="flex justify-center mb-12">
+          <div className="flex justify-center mb-8 sm:mb-12">
             <div
-              className="w-32 h-0.5 rounded-full"
+              className="w-24 sm:w-32 h-0.5 rounded-full"
               style={{
                 background: "linear-gradient(90deg, transparent, #63B3ED, #4299E1, transparent)",
               }}
@@ -254,7 +255,7 @@ export default function AppPage({
             <div className="flex justify-center mb-4">
               <Button
                 onClick={() => setShowApprovalTools(!showApprovalTools)}
-                className="text-white font-semibold px-6 py-2 text-sm"
+                className="text-white font-semibold px-4 sm:px-6 py-2 text-xs sm:text-sm"
                 style={{
                   fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
                   background: "linear-gradient(135deg, #9F7AEA 0%, #805AD5 100%)",
@@ -267,29 +268,29 @@ export default function AppPage({
 
           {/* Token Approval Tools */}
           {isConnected && showApprovalTools && (
-            <div className="mb-8 p-4 rounded-lg" style={{
+            <div className="mb-6 sm:mb-8 p-4 rounded-lg" style={{
               backgroundColor: "rgba(255, 255, 255, 0.5)",
               borderColor: "rgba(99, 179, 237, 0.08)",
               backdropFilter: "blur(20px)",
               border: "1px solid rgba(99, 179, 237, 0.2)",
             }}>
-              <h3 className="text-lg font-bold mb-4 text-center" style={{
+              <h3 className="text-base sm:text-lg font-bold mb-4 text-center" style={{
                 fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
               }}>TOKEN_APPROVAL_TOOLS</h3>
-              
-              <div className="grid grid-cols-2 gap-4">
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="p-4 rounded-lg" style={{
                   backgroundColor: "rgba(255, 255, 255, 0.7)",
                   border: "1px solid rgba(99, 179, 237, 0.2)",
                 }}>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-semibold">USDC Balance:</span>
-                    <span>{usdcBalance} USDC</span>
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 space-y-1 sm:space-y-0">
+                    <span className="font-semibold text-sm sm:text-base">USDC Balance:</span>
+                    <span className="text-sm sm:text-base">{usdcBalance} USDC</span>
                   </div>
                   <Button
                     onClick={handleApproveUSDC}
                     disabled={isApprovingUSDC}
-                    className="w-full"
+                    className="w-full text-sm sm:text-base"
                     style={{
                       background: "linear-gradient(135deg, #63B3ED 0%, #4299E1 100%)",
                       color: "white",
@@ -298,19 +299,19 @@ export default function AppPage({
                     {isApprovingUSDC ? "APPROVING..." : "APPROVE_USDC"}
                   </Button>
                 </div>
-                
+
                 <div className="p-4 rounded-lg" style={{
                   backgroundColor: "rgba(255, 255, 255, 0.7)",
                   border: "1px solid rgba(99, 179, 237, 0.2)",
                 }}>
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-semibold">AAPL Balance:</span>
-                    <span>{aaplBalance} AAPL</span>
+                  <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 space-y-1 sm:space-y-0">
+                    <span className="font-semibold text-sm sm:text-base">AAPL Balance:</span>
+                    <span className="text-sm sm:text-base">{aaplBalance} AAPL</span>
                   </div>
                   <Button
                     onClick={handleApproveAAPL}
                     disabled={isApprovingAAPL}
-                    className="w-full"
+                    className="w-full text-sm sm:text-base"
                     style={{
                       background: "linear-gradient(135deg, #68D391 0%, #48BB78 100%)",
                       color: "white",
@@ -320,7 +321,7 @@ export default function AppPage({
                   </Button>
                 </div>
               </div>
-              
+
               {/* Test Connection Button */}
               <div className="mt-4 p-4 rounded-lg" style={{
                 backgroundColor: "rgba(255, 255, 255, 0.7)",
@@ -332,7 +333,7 @@ export default function AppPage({
                       const protocolAddress = getStockLendProtocolAddress(chainId)
                       console.log('Protocol address:', protocolAddress)
                       toast.success(`Successfully connected to protocol at ${protocolAddress}`)
-                      
+
                       // Refresh balances
                       refetchUSDCBalance()
                       refetchAAPLBalance()
@@ -343,7 +344,7 @@ export default function AppPage({
                       toast.error(`Connection test failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
                     }
                   }}
-                  className="w-full"
+                  className="w-full text-sm sm:text-base"
                   style={{
                     background: "linear-gradient(135deg, #F6AD55 0%, #ED8936 100%)",
                     color: "white",
@@ -352,9 +353,9 @@ export default function AppPage({
                   TEST_CONNECTION
                 </Button>
               </div>
-              
+
               <div className="mt-2 text-xs text-gray-500 text-center">
-                <p>Protocol Address: {chainId ? getStockLendProtocolAddress(chainId) : "Not connected"}</p>
+                <p className="break-all">Protocol Address: {chainId ? getStockLendProtocolAddress(chainId) : "Not connected"}</p>
                 <p className="mt-1">Network: {chainId || "Unknown"}</p>
               </div>
             </div>
@@ -362,23 +363,26 @@ export default function AppPage({
 
           <Tabs defaultValue="lend" className="w-full">
             <TabsList
-              className="grid w-full grid-cols-4 mb-8"
+              className="grid w-full grid-cols-2 sm:grid-cols-5 mb-6 sm:mb-8"
               style={{
                 backgroundColor: "rgba(255, 255, 255, 0.6)",
                 fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
               }}
             >
-              <TabsTrigger value="lend" style={{ color: "#4A5568", letterSpacing: "0.05em" }}>
+              <TabsTrigger value="lend" className="text-xs sm:text-sm" style={{ color: "#4A5568", letterSpacing: "0.05em" }}>
                 LEND_USDC
               </TabsTrigger>
-              <TabsTrigger value="borrow" style={{ color: "#4A5568", letterSpacing: "0.05em" }}>
+              <TabsTrigger value="borrow" className="text-xs sm:text-sm" style={{ color: "#4A5568", letterSpacing: "0.05em" }}>
                 BORROW_USDC
               </TabsTrigger>
-              <TabsTrigger value="hedge" style={{ color: "#4A5568", letterSpacing: "0.05em" }}>
+              <TabsTrigger value="hedge" className="text-xs sm:text-sm" style={{ color: "#4A5568", letterSpacing: "0.05em" }}>
                 PUT_OPTIONS
               </TabsTrigger>
-              <TabsTrigger value="positions" style={{ color: "#4A5568", letterSpacing: "0.05em" }}>
+              <TabsTrigger value="positions" className="text-xs sm:text-sm" style={{ color: "#4A5568", letterSpacing: "0.05em" }}>
                 MY_POSITIONS
+              </TabsTrigger>
+              <TabsTrigger value="demo" className="text-xs sm:text-sm" style={{ color: "#4A5568", letterSpacing: "0.05em" }}>
+                ALICE_DEMO
               </TabsTrigger>
             </TabsList>
 
@@ -396,6 +400,10 @@ export default function AppPage({
 
             <TabsContent value="positions">
               <MyPositionsComponent onSuccess={handleSuccess} />
+            </TabsContent>
+
+            <TabsContent value="demo">
+              <DemoComponent />
             </TabsContent>
           </Tabs>
         </div>

@@ -612,10 +612,10 @@ contract StockLendProtocolV3 is Ownable, ReentrancyGuard, AutomationCompatibleIn
 
         BlackScholesLib.BSResult memory bsResult = BlackScholesLib.calculatePutPremiumHybrid(bsParams);
 
-        // Calculate yield components using generic formula
-        uint256 baseYield = (loanAmount * BASE_USDC_YIELD * timeToMaturity) / (1e36);
-        uint256 protocolFee = (loanAmount * PROTOCOL_FEE_RATE * timeToMaturity) / (1e36);
-        uint256 budgetPrime = (loanAmount * PREMIUM_RATE * timeToMaturity) / (1e36);
+        // Calculate yield components using generic formula (safe arithmetic)
+        uint256 baseYield = (loanAmount * BASE_USDC_YIELD * timeToMaturity) / (1e18 * 1e18);
+        uint256 protocolFee = (loanAmount * PROTOCOL_FEE_RATE * timeToMaturity) / (1e18 * 1e18);
+        uint256 budgetPrime = (loanAmount * PREMIUM_RATE * timeToMaturity) / (1e18 * 1e18);
 
         return CreateLoanData({
             currentPrice: currentPrice,
@@ -632,16 +632,16 @@ contract StockLendProtocolV3 is Ownable, ReentrancyGuard, AutomationCompatibleIn
     function _calculateYield(uint256 loanAmount, uint256 duration) internal pure returns (YieldCalculation memory) {
         // Base yield = loan amount * base rate * time
         uint256 timeInYears = (duration * 1e18) / 365 days;
-        uint256 baseYield = (loanAmount * BASE_USDC_YIELD * timeInYears) / 1e36;
+        uint256 baseYield = (loanAmount * BASE_USDC_YIELD * timeInYears) / (1e18 * 1e18);
 
         // Premium yield = 7% APR as specified by user
-        uint256 premiumYield = (loanAmount * PREMIUM_RATE * timeInYears) / 1e36;
+        uint256 premiumYield = (loanAmount * PREMIUM_RATE * timeInYears) / (1e18 * 1e18);
 
         // Protocol fee = 0.25% of loan amount
-        uint256 protocolFee = (loanAmount * PROTOCOL_FEE_RATE * timeInYears) / 1e36;
+        uint256 protocolFee = (loanAmount * PROTOCOL_FEE_RATE * timeInYears) / (1e18 * 1e18);
 
         // Reserve buffer = 0.5% of loan amount
-        uint256 reserveBuffer = (loanAmount * RESERVE_BUFFER_RATE * timeInYears) / 1e36;
+        uint256 reserveBuffer = (loanAmount * RESERVE_BUFFER_RATE * timeInYears) / (1e18 * 1e18);
 
         return YieldCalculation({
             baseYield: baseYield,

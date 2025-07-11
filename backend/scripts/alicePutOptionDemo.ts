@@ -14,7 +14,7 @@ function logSubsection(title: string) {
 }
 
 function formatUSDC(amount: any): string {
-    return '$' + ethers.utils.formatEther(amount)
+    return '$' + ethers.utils.formatEther(amount) // 18 decimals for internal calculations
 }
 
 function formatPrice(amount: any, decimals = 8): string {
@@ -24,7 +24,7 @@ function formatPrice(amount: any, decimals = 8): string {
 async function deployContracts(deployer: any) {
     console.log('🚀 Deploying contracts...')
 
-    // Deploy Mock USDC
+    // Deploy Mock USDC (18 decimals for internal calculations)
     const MyERC20Mock = await ethers.getContractFactory('MyERC20Mock')
     const mockUSDC = await MyERC20Mock.deploy('USD Coin', 'USDC')
     await mockUSDC.deployed()
@@ -47,24 +47,62 @@ async function deployContracts(deployer: any) {
 async function setupFunding(mockUSDC: any, protocolV3: any, deployer: any) {
     console.log('💰 Setting up funding...')
 
-    const lendingAmount = ethers.utils.parseEther('100000')
-    const protectionFundAmount = ethers.utils.parseEther('15000')
-    const totalAmount = lendingAmount.add(protectionFundAmount)
+    // Check initial balance
+    let balance = await mockUSDC.balanceOf(deployer.address)
+    console.log('📊 Initial USDC Balance:', formatUSDC(balance))
 
-    // Mint and approve USDC
-    await mockUSDC.mint(deployer.address, totalAmount)
-    await mockUSDC.approve(protocolV3.address, totalAmount)
+    // Mint USDC step by step
+    console.log('🏭 Minting USDC...')
+    const mintAmount = ethers.utils.parseEther('200000') // 200k USDC
+    const mintTx = await mockUSDC.mint(deployer.address, mintAmount)
+    await mintTx.wait()
+    console.log('✅ Mint transaction confirmed')
+
+    // Verify balance after minting
+    balance = await mockUSDC.balanceOf(deployer.address)
+    console.log('📊 USDC Balance after mint:', formatUSDC(balance))
+
+    if (balance.eq(0)) {
+        throw new Error('USDC minting failed - balance is still 0')
+    }
+
+    // Approve protocol for protection fund
+    const protectionFundAmount = ethers.utils.parseEther('15000')
+    console.log('📝 Approving', formatUSDC(protectionFundAmount), 'for protection fund...')
+    const approveTx = await mockUSDC.approve(protocolV3.address, protectionFundAmount)
+    await approveTx.wait()
+    console.log('✅ Approval confirmed')
+
+    // Check allowance
+    const allowance = await mockUSDC.allowance(deployer.address, protocolV3.address)
+    console.log('📊 Allowance:', formatUSDC(allowance))
 
     // Fund protection fund
-    await protocolV3.depositProtectionFund(protectionFundAmount)
+    console.log('💰 Depositing protection fund...')
+    const depositTx = await protocolV3.depositProtectionFund(protectionFundAmount)
+    await depositTx.wait()
+    console.log('✅ Protection fund deposited')
 
-    // Fund lending pool
-    await mockUSDC.transfer(protocolV3.address, ethers.utils.parseEther('50000'))
+    // Check balance after protection fund deposit
+    balance = await mockUSDC.balanceOf(deployer.address)
+    console.log('📊 Balance after protection deposit:', formatUSDC(balance))
 
+    // Fund lending pool directly
+    const lendingAmount = ethers.utils.parseEther('50000')
+    console.log('🏦 Transferring', formatUSDC(lendingAmount), 'to lending pool...')
+    const transferTx = await mockUSDC.transfer(protocolV3.address, lendingAmount)
+    await transferTx.wait()
+    console.log('✅ Lending pool funded')
+
+    // Final balances
+    const finalBalance = await mockUSDC.balanceOf(deployer.address)
+    const protocolBalance = await mockUSDC.balanceOf(protocolV3.address)
     const stats = await protocolV3.getProtocolStats()
+
     console.log('✅ Funding complete')
+    console.log('  - Our remaining balance:', formatUSDC(finalBalance))
     console.log('  - Protection Fund:', formatUSDC(stats.totalProtectionFund))
-    console.log('  - Total Protocol Balance:', formatUSDC(await mockUSDC.balanceOf(protocolV3.address)))
+    console.log('  - Protocol USDC Balance:', formatUSDC(protocolBalance))
 }
 
 async function setupStockAsset(protocolV3: any, deployer: any) {
@@ -97,7 +135,7 @@ async function setupStockAsset(protocolV3: any, deployer: any) {
 async function demonstrateGenericFormula(protocolV3: any) {
     logSubsection('🧮 Black-Scholes Generic Formula Demo')
 
-    const loanAmount = ethers.utils.parseEther('12000')
+    const loanAmount = ethers.utils.parseEther('12000') // $12,000
     const duration = 90 * 24 * 60 * 60 // 90 days
     const currentPrice = 200 * 10 ** 8 // $200
     const volatility = ethers.utils.parseEther('0.3') // 30%

@@ -66,8 +66,14 @@ export default function VoltaLoan() {
           setIsConnected(true)
           setAccount(accounts[0])
         }
-      } catch (error) {
-        console.error("Error checking connection:", error)
+      } catch (error: any) {
+        // Handle the error more gracefully
+        const errorMessage = error?.message || error?.toString() || 'Unknown connection error'
+        console.error("Error checking connection:", errorMessage)
+
+        // Reset connection state on error
+        setIsConnected(false)
+        setAccount("")
       }
     }
   }
@@ -121,9 +127,13 @@ export default function VoltaLoan() {
       })
 
       setCurrentNetwork(networkKey)
+      console.log(`✅ Successfully switched to ${network.name}`)
     } catch (switchError: any) {
+      console.log("Switch error details:", switchError)
+
       // This error code indicates that the chain has not been added to the wallet
       if (switchError.code === 4902) {
+        console.log(`📋 Adding ${network.name} to wallet...`)
         try {
           await window.ethereum.request({
             method: "wallet_addEthereumChain",
@@ -143,11 +153,27 @@ export default function VoltaLoan() {
           })
 
           setCurrentNetwork(networkKey)
-        } catch (addError) {
-          console.error("Error adding network:", addError)
+          console.log(`✅ Successfully added and switched to ${network.name}`)
+        } catch (addError: any) {
+          console.log("Add error details:", addError)
+
+          // Handle specific error cases
+          if (addError.code === 4001) {
+            console.log("❌ User rejected the request to add network")
+          } else if (addError.code === -32002) {
+            console.log("⏳ Request already pending in wallet")
+          } else if (Object.keys(addError).length === 0) {
+            console.log("❌ User likely rejected the network addition request")
+          } else {
+            console.error("❌ Unknown error adding network:", addError)
+          }
         }
+      } else if (switchError.code === 4001) {
+        console.log("❌ User rejected the request to switch networks")
+      } else if (switchError.code === -32002) {
+        console.log("⏳ Network switch request already pending in wallet")
       } else {
-        console.error("Error switching network:", switchError)
+        console.log("❌ Error switching network:", switchError)
       }
     } finally {
       setIsSwitchingNetwork(false)
@@ -254,22 +280,22 @@ export default function VoltaLoan() {
       </div>
 
       {/* Header */}
-      <header className="relative z-10 flex justify-between items-center p-8">
-        <div className="flex items-center space-x-3">
+      <header className="relative z-10 flex flex-col sm:flex-row sm:justify-between sm:items-center p-4 sm:p-8 space-y-4 sm:space-y-0">
+        <div className="flex items-center space-x-3 mx-auto sm:mx-0">
           <div className="relative">
             <div
-              className="w-12 h-12 rounded-lg flex items-center justify-center"
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-lg flex items-center justify-center"
               style={{ background: "linear-gradient(135deg, #63B3ED 0%, #4299E1 100%)" }}
             >
-              <Zap className="w-7 h-7 text-white" />
+              <Zap className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             </div>
           </div>
           <div
-            className="text-3xl font-bold"
+            className="text-2xl sm:text-3xl font-bold"
             style={{
               fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
               fontWeight: "700",
-              fontSize: "26px",
+              fontSize: "clamp(20px, 5vw, 26px)",
               letterSpacing: "0.02em",
               background: "linear-gradient(135deg, #4299E1 0%, #63B3ED 100%)",
               WebkitBackgroundClip: "text",
@@ -285,7 +311,7 @@ export default function VoltaLoan() {
           <Button
             onClick={connectWallet}
             disabled={isConnecting}
-            className="text-white font-semibold px-6 py-3"
+            className="text-white font-semibold px-4 sm:px-6 py-2 sm:py-3 text-sm sm:text-base mx-auto sm:mx-0"
             style={{
               fontFamily: "'GT Standard Mono', 'JetBrains Mono', 'Fira Code', 'SF Mono', Consolas, monospace",
               background: "linear-gradient(135deg, #63B3ED 0%, #4299E1 100%)",
@@ -295,7 +321,7 @@ export default function VoltaLoan() {
             {isConnecting ? "CONNECTING..." : "CONNECT_WALLET"}
           </Button>
         ) : (
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3 justify-center sm:justify-end">
             {/* Network Selector */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -310,12 +336,12 @@ export default function VoltaLoan() {
                   disabled={isSwitchingNetwork}
                 >
                   <div
-                    className="w-6 h-6 rounded-full flex items-center justify-center"
+                    className="w-5 h-5 sm:w-6 sm:h-6 rounded-full flex items-center justify-center"
                     style={{ background: "linear-gradient(135deg, #63B3ED 0%, #4299E1 100%)" }}
                   >
                     {currentNetworkData.icon}
                   </div>
-                  <span className="text-xs font-medium" style={{ color: "#4A5568" }}>
+                  <span className="text-xs font-medium hidden sm:block" style={{ color: "#4A5568" }}>
                     {isSwitchingNetwork ? "..." : currentNetworkData.symbol}
                   </span>
                   <ChevronDown className="w-3 h-3" style={{ color: "#63B3ED" }} />
@@ -355,7 +381,7 @@ export default function VoltaLoan() {
             <Button
               onClick={disconnectWallet}
               variant="outline"
-              className="font-semibold px-6 py-3 bg-transparent"
+              className="font-semibold px-4 sm:px-6 py-2 sm:py-3 bg-transparent text-sm sm:text-base"
               style={{
                 borderColor: "#63B3ED",
                 color: "#4299E1",
